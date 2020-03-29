@@ -8,11 +8,11 @@ import org.coepi.android.repo.RealmProvider
 class RealmCenKeyDao(private val realmProvider: RealmProvider) {
     private val realm get() = realmProvider.realm
 
-    fun lastCENKeys(limit : Int): List<RealmCenKey> =
+    fun lastCENKey(): RealmCenKey? =
         realm.where<RealmCenKey>()
             .sort("timestamp", DESCENDING)
-            .limit(limit.toLong())
-            .findAll()
+            .limit(1)
+            .findFirst()
 
     fun insert(key: CenKey) {
         realm.executeTransaction {

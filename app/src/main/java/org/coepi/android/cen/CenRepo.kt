@@ -34,13 +34,10 @@ class CenRepo(private val cenApi: CENApi, private val cenDao: RealmCenDao, priva
         CEN.value = ByteArray(0)
 
         // load last CENKey + CENKeytimestamp from local storage
-        val lastKeys = cenkeyDao.lastCENKeys(1)
-        if (lastKeys.isNotEmpty()) {
-            val lk = lastKeys[0]
-            lk.let {
-                cenKey = it.key
-                cenKeyTimestamp = it.timestamp
-            }
+        val lastKey = cenkeyDao.lastCENKey()
+        lastKey?.let {
+            cenKey = it.key
+            cenKeyTimestamp = it.timestamp
         }
 
         // Setup regular CENKey refresh + CEN refresh
@@ -103,24 +100,17 @@ class CenRepo(private val cenApi: CENApi, private val cenDao: RealmCenDao, priva
     // 3. Client fetch reports from /cenreport/<cenKey> (base64 encoded)
     private fun getCENReport(cenKey : String) = cenApi.getCENReport(cenKey)
 
-    // doPostSymptoms is called when a ViewModel in the UI sees the user finish a Symptoms Report, the Symptoms + last 3 CENKeys are posted to the server
+    // doPostSymptoms is called when a ViewModel in the UI sees the user finish a Symptoms Report, the Symptoms + last CENKey are posted to the server
+    // Reveal: upon a positive diagnosis, the app broadcasts to a health authority database:
+    // the short label L, a key Kj, and the initial period j.
+    // Other application users download the key Kj, and the initial period j, and can from those two precompute
+    // all subsequent CENs from that initial period j and compare them with the ones seen on phone.
+    // The comparison here is purely string comparison, and therefore efficient string search algorithms can be used.
     fun doPostSymptoms(report : RealmCenReport) {
-        val CENKeysStr = lastCENKeys(3)
-        CENKeysStr?.let {
+        val CENKey = cenkeyDao.lastCENKey()
+        CENKey?.let {
             postCENReport(report)
         }
-    }
-
-    // lastCENKeys gets the last few CENKeys used to generate CENs by this device
-    fun lastCENKeys(lim : Int) : String? {
-        val CENKeys = cenkeyDao.lastCENKeys(lim)
-        CENKeys?.let {
-            if ( CENKeys.size > 0 ) {
-                val CENKeysStrings = CENKeys.map{ k -> k.toString() }
-                return CENKeysStrings.joinToString(",")
-            }
-        }
-        return null
     }
 
     fun periodicCENKeysCheck() {
