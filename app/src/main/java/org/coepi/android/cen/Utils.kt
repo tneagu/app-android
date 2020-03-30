@@ -29,7 +29,7 @@ fun computeUUIDHash(selfUUID: UUID, otherUUID: UUID) : ByteArray {
     return md.digest(bytes.toByteArray()).toUByteArray().asByteArray()
 }
 
-fun IntToByteArray(i: Int): ByteArray? {
+fun IntToByteArray(i: Int): ByteArray {
     val bb: ByteBuffer = ByteBuffer.allocate(Integer.SIZE / java.lang.Byte.SIZE)
     bb.order(ByteOrder.BIG_ENDIAN)
     bb.putInt(i)

@@ -8,15 +8,11 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface CENApi {
-    // post CENReport along with CENKeys
+    // post CENReport, which contains info needed for matching
     @POST("/cenreport")
-    fun postCENReport(@Body report : RealmCenReport): Single<Unit>
+    fun postCENReport(@Body report : CenReport): Single<Unit>
 
-    // get recent keys that have CEN Reports
-    @GET("/cenkeys/{timestamp}")
-    fun cenkeysCheck(@Path("timestamp") timestamp : Int): Call<RealmCenKeys>
-
-    // get report based on matched CENkey
-    @GET("/cenreport/{key}")
-    fun getCENReport(@Path("key") key: String): Call<Array<RealmCenReport>>
+    // get CENReport report based on timestamp
+    @GET("/cenreport/{timestamp}")
+    fun getCENReport(@Path("timestamp") timestamp: Int): Call<Array<CenReport>>
 }

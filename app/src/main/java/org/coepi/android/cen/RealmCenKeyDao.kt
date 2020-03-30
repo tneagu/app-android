@@ -17,14 +17,31 @@ class RealmCenKeyDao(private val realmProvider: RealmProvider) {
     fun insert(key: CenKey) {
         realm.executeTransaction {
             val realmObj = realm.createObject<RealmCenKey>()
-            realmObj.key = key.key
-            realmObj.timestamp = key.timestamp
+            realmObj.S = key.S.toString()
+            realmObj.L = key.L.toString()
+            realmObj.K0 = key.K0.toString()
+            realmObj.K0timestamp = key.K0Timestamp
+            realmObj.currentKey = key.currentKey
         }
     }
 
-//    @Query("SELECT * FROM cenkey WHERE :first <= timeStamp AND timeStamp <= :last LIMIT 1")
-//    fun findByRange(first: Int?, last: Int?): List<CENKey>?
+    fun updateKey(key: CenKey) {
+        // TODO, figure out REALM
+        realm.executeTransaction {
+            val realmObj = realm.createObject<RealmCenKey>()
+            realmObj.S = key.S.toString()
+            realmObj.L = key.L.toString()
+            realmObj.K0 = key.K0.toString()
+            realmObj.K0timestamp = key.K0Timestamp
+            realmObj.currentKey = key.currentKey
+        }
+    }
 
-//    @Delete
-//    fun deleteBefore(timestamp : Int)
+
+    // @Query("SELECT * FROM cenkey WHERE :first <= timeStamp AND timeStamp <= :last LIMIT 1")
+    // fun findByRange(first: Int?, last: Int?): List<CENKey>?
+
+    // @Delete
+    // fun deleteBefore(timestamp : Int)
 }
+
