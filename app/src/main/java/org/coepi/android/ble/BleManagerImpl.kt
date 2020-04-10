@@ -6,7 +6,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.ComponentName
-import android.content.Context
 import android.content.Context.BIND_AUTO_CREATE
 import android.content.Intent
 import android.content.ServiceConnection
@@ -20,9 +19,6 @@ import io.reactivex.subjects.PublishSubject.create
 import org.coepi.android.MainActivity
 import org.coepi.android.R
 import org.coepi.android.cen.Cen
-import org.coepi.android.extensions.toHex
-import org.coepi.android.system.log.LogTag.BLE
-import org.coepi.android.system.log.log
 import org.covidwatch.libcontactrace.BluetoothService
 import org.covidwatch.libcontactrace.BluetoothService.LocalBinder
 import org.covidwatch.libcontactrace.cen.CenGenerator
@@ -59,8 +55,9 @@ class BleManagerImpl(
     }
 
     override fun startService(cen: Cen) {
-        bleManagerWithCen = BleManagerWithCen(cen, app)
+        bleManagerWithCen = BleManagerWithCen(cen, app, this)
         bleManagerWithCen?.startService(cen)
+        bleManagerWithCen?.startAdvertiser(cen)
     }
 
     override fun stopAdvertiser() {
@@ -72,9 +69,9 @@ class BleManagerImpl(
     }
 }
 
-class BleManagerWithCen(private var initialCen: Cen, private val app: Application) {
+class BleManagerWithCen(initialCen: Cen, private val app: Application, bleManager: BleManagerImpl) {
 
-    val scanObservable: PublishSubject<Cen> = create()
+    val scanObservable: PublishSubject<Cen> = bleManager.scanObservable
 
     private val intent get() = Intent(app, BluetoothService::class.java)
 
@@ -87,12 +84,10 @@ class BleManagerWithCen(private var initialCen: Cen, private val app: Applicatio
     }
 
     private val cenGenerator = DefaultCenGenerator(initialCen)
-    private val cenVisitor = DefaultCenVisitor(app)
+    private val cenVisitor = DefaultCenVisitor()
 
-    inner class DefaultCenVisitor(private val ctx: Context) : CenVisitor {
-        override fun visit(cen: GeneratedCen) {
-            log.i("VISITOR: Generated a CEN: ${cen.data.toHex()}", BLE)
-        }
+    inner class DefaultCenVisitor : CenVisitor {
+        override fun visit(cen: GeneratedCen) {}
 
         override fun visit(cen: ObservedCen) {
             scanObservable.onNext(Cen(cen.data))
