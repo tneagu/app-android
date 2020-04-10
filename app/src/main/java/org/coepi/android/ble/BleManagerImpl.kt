@@ -20,14 +20,15 @@ import io.reactivex.subjects.PublishSubject.create
 import org.coepi.android.MainActivity
 import org.coepi.android.R
 import org.coepi.android.cen.Cen
+import org.coepi.android.extensions.toHex
+import org.coepi.android.system.log.LogTag.BLE
+import org.coepi.android.system.log.log
 import org.covidwatch.libcontactrace.BluetoothService
 import org.covidwatch.libcontactrace.BluetoothService.LocalBinder
 import org.covidwatch.libcontactrace.cen.CenGenerator
 import org.covidwatch.libcontactrace.cen.CenVisitor
 import org.covidwatch.libcontactrace.cen.GeneratedCen
 import org.covidwatch.libcontactrace.cen.ObservedCen
-import org.covidwatch.libcontactrace.toBytes
-import java.util.UUID
 
 interface BleManager {
     val scanObservable: Observable<Cen>
@@ -47,23 +48,51 @@ class BleManagerImpl(
 
     override val scanObservable: PublishSubject<Cen> = create()
 
+    private var bleManagerWithCen: BleManagerWithCen? = null
+
+    override fun changeAdvertisedValue(cen: Cen) {
+        bleManagerWithCen?.changeAdvertisedValue(cen)
+    }
+
+    override fun startAdvertiser(cen: Cen) {
+        bleManagerWithCen?.startAdvertiser(cen)
+    }
+
+    override fun startService(cen: Cen) {
+        bleManagerWithCen = BleManagerWithCen(cen, app)
+        bleManagerWithCen?.startService(cen)
+    }
+
+    override fun stopAdvertiser() {
+        bleManagerWithCen?.stopAdvertiser()
+    }
+
+    override fun stopService() {
+        bleManagerWithCen?.stopService()
+    }
+}
+
+class BleManagerWithCen(private var initialCen: Cen, private val app: Application) {
+
+    val scanObservable: PublishSubject<Cen> = create()
+
     private val intent get() = Intent(app, BluetoothService::class.java)
 
     private var service: BluetoothService? = null
 
-    class DefaultCenGenerator(var cen: org.covidwatch.libcontactrace.cen.Cen? = null) :
-        CenGenerator {
+    class DefaultCenGenerator(var cen: Cen): CenGenerator {
         override fun generate(): GeneratedCen {
-            return   GeneratedCen(UUID.randomUUID().toBytes())
+            return GeneratedCen(cen.bytes)
         }
     }
 
-    private val cenGenerator = DefaultCenGenerator()
+    private val cenGenerator = DefaultCenGenerator(initialCen)
     private val cenVisitor = DefaultCenVisitor(app)
 
     inner class DefaultCenVisitor(private val ctx: Context) : CenVisitor {
-
-        override fun visit(cen: GeneratedCen) {}
+        override fun visit(cen: GeneratedCen) {
+            log.i("VISITOR: Generated a CEN: ${cen.data.toHex()}", BLE)
+        }
 
         override fun visit(cen: ObservedCen) {
             scanObservable.onNext(Cen(cen.data))
@@ -72,7 +101,7 @@ class BleManagerImpl(
 
     private val serviceConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            this@BleManagerImpl.service = (service as LocalBinder).service.apply {
+            this@BleManagerWithCen.service = (service as LocalBinder).service.apply {
                 configure(
                     BluetoothService.ServiceConfiguration(
                         cenGenerator,
@@ -122,27 +151,27 @@ class BleManagerImpl(
         }
     }
 
-    override fun changeAdvertisedValue(cen: Cen) {
-        cenGenerator.cen = GeneratedCen(cen.bytes)
+    fun changeAdvertisedValue(cen: Cen) {
+        cenGenerator.cen = cen
         service?.updateCen()
     }
 
-    override fun startAdvertiser(cen: Cen) {
-        cenGenerator.cen = GeneratedCen(cen.bytes)
+    fun startAdvertiser(cen: Cen) {
+        cenGenerator.cen = cen
         service?.startAdvertiser()
     }
 
-    override fun startService(cen: Cen) {
-        cenGenerator.cen = GeneratedCen(cen.bytes)
+    fun startService(cen: Cen) {
+        cenGenerator.cen = cen
         app.bindService(intent, serviceConnection, BIND_AUTO_CREATE)
         app.startService(intent)
     }
 
-    override fun stopAdvertiser() {
+    fun stopAdvertiser() {
         service?.stopAdvertiser()
     }
 
-    override fun stopService() {
+    fun stopService() {
         app.stopService(intent)
     }
 
