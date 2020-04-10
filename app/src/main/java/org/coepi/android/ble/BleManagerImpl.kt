@@ -57,7 +57,6 @@ class BleManagerImpl(
     override fun startService(cen: Cen) {
         bleManagerWithCen = BleManagerWithCen(cen, app, this)
         bleManagerWithCen?.startService(cen)
-        bleManagerWithCen?.startAdvertiser(cen)
     }
 
     override fun stopAdvertiser() {
