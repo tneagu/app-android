@@ -7,6 +7,7 @@ import org.coepi.android.ble.BleManager
 import org.coepi.android.cen.ReceivedCen
 import org.coepi.android.extensions.coEpiTimestamp
 import org.coepi.android.repo.CoEpiRepo
+import org.coepi.android.system.log.LogTag.BLE
 import org.coepi.android.system.log.log
 import java.util.Date
 
@@ -19,6 +20,7 @@ class ScannedCensHandler(
     init {
         disposables += bleManager.scanObservable
             .subscribeBy(onNext = { cen ->
+                log.v("Storing observed CEN: $cen", BLE)
                 coEpiRepo.storeObservedCen(ReceivedCen(cen, Date().coEpiTimestamp()))
             }, onError = {
                 log.e("Error scanning: $it")

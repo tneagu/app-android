@@ -5,6 +5,7 @@ import io.reactivex.Observable.empty
 import io.reactivex.Observable.just
 import org.coepi.android.domain.CenLogic
 import org.coepi.android.extensions.coEpiTimestamp
+import org.coepi.android.system.log.LogTag.BLE
 import org.coepi.android.system.log.LogTag.CEN_L
 import org.coepi.android.system.log.log
 import java.util.Date
@@ -27,6 +28,9 @@ class MyCenProviderImpl(
         }
         .map { key ->
             cenLogic.generateCen(key, key.timestamp)
+        }
+        .doOnNext {
+            log.i("TIMER: Generated a new CEN: $it", BLE)
         }
 
     private fun generateAndStoreNewCenKeyIfNeeded(): Observable<CenKey> {
