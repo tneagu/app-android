@@ -6,6 +6,7 @@ import androidx.work.ListenableWorker.Result.success
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import kotlinx.coroutines.delay
+import org.coepi.android.cen.RealmCenDao
 import org.coepi.android.cen.RealmCenReportDao
 import org.coepi.android.cen.ReceivedCenReport
 import org.coepi.android.common.doIfSuccess
@@ -29,6 +30,7 @@ class ContactsFetchWorker(
 
     private val coEpiRepo: CoEpiRepo by inject()
     private val reportsDao: RealmCenReportDao by inject()
+    private val cenDao: RealmCenDao by inject()
     private val preferences: Preferences by inject()
 
     override suspend fun doWork(): Result {
@@ -39,6 +41,9 @@ class ContactsFetchWorker(
         } ?: minDate()
 
         val nowBeforeRequest: CoEpiDate = now()
+
+        //delete old CENs
+        cenDao.cleanCENs(nowBeforeRequest.unixTime)
 
         val reportsResult =
             coEpiRepo.reports(fromDate)

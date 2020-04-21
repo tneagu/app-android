@@ -1,6 +1,7 @@
 package org.coepi.android.cen
 
 import io.realm.kotlin.createObject
+import io.realm.kotlin.delete
 import io.realm.kotlin.oneOf
 import io.realm.kotlin.where
 import org.coepi.android.domain.CoEpiDate
@@ -32,12 +33,18 @@ class RealmCenDao(private val realmProvider: RealmProvider) {
             return false
         }
         realm.executeTransaction {
-            val realmObj = realm.createObject<RealmReceivedCen>(cen.cen.toHex()) // Create a new object
+            val realmObj =
+                realm.createObject<RealmReceivedCen>(cen.cen.toHex()) // Create a new object
             realmObj.timestamp = cen.date.unixTime
         }
         return true
     }
 
-//    @Delete("DELETE FROM cen where :timeStamp > timeStamp")
-//    fun cleanCENs(timeStamp : Int)
+    //    @Delete("DELETE FROM cen where :timeStamp > timeStamp")
+    fun cleanCENs(timeStamp: Long) =
+        realm.where<RealmReceivedCen>()
+            .lessThan("timestamp", timeStamp)
+            .findAll()
+            .deleteAllFromRealm()
+
 }
